@@ -173,7 +173,7 @@ for epoch in range(num_epochs):
     model.train()
     epoch_start_time=time.time()#시간확인용
     mixed_running_loss=0.0
-    mse_running_loss = 0.0
+    mae_running_loss = 0.0
     
     for noisy_images, clean_images in train_loader:
         
@@ -189,11 +189,11 @@ for epoch in range(num_epochs):
             # 모델 순전파
             
             outputs = model(noisy_images)
-            mse_loss=criterion(outputs,clean_images)#기존과 확인하려고 넣은 loss 학습과는 무관
+            mae_loss=criterion(outputs,clean_images)#기존과 확인하려고 넣은 loss 학습과는 무관
             #mixed_loss = 0.9*mse_loss+0.1*pctloss.forward(noisy_images-outputs,clean_images)
 
         # 역전파 및 가중치 업데이트
-        scaler.scale(mse_loss).backward()
+        scaler.scale(mae_loss).backward()
         #Gradient Clipping
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         #optimizer.step()
@@ -202,7 +202,7 @@ for epoch in range(num_epochs):
         scheduler.step()
         
         #mixed_running_loss += mixed_loss.item() * noisy_images.size(0)
-        mse_running_loss+=mse_loss.item()* noisy_images.size(0)#기존과 확인하려고 넣은 loss 학습과는 무관
+        mae_running_loss+=mae_loss.item()* noisy_images.size(0)#기존과 확인하려고 넣은 loss 학습과는 무관
 
     current_lr = scheduler.get_last_lr()[0]
     epoch_end_time=time.time()#시간 확인용
@@ -212,14 +212,14 @@ for epoch in range(num_epochs):
     hours = int(minutes // 60)
     minutes = int(minutes % 60)
 
-    mse_epoch_loss = mse_running_loss / len(train_dataset)
+    mae_epoch_loss = mae_running_loss / len(train_dataset)
     mixed_epoch_loss=mixed_running_loss / len(train_dataset)#기존과 확인하려고 넣은 loss 학습과는 무관
-    print(f'Epoch {epoch+1}/{num_epochs}, MSE Loss: {mse_epoch_loss:.4f}, Mixed Loss: {mixed_epoch_loss:.4f},Lr:{current_lr:.8f}')
+    print(f'Epoch {epoch+1}/{num_epochs}, MAE Loss: {mae_epoch_loss:.4f}, Mixed Loss: {mixed_epoch_loss:.4f},Lr:{current_lr:.8f}')
     print(f"1epoch 훈련 소요 시간: {hours}시간 {minutes}분 {seconds}초")
 
 # 현재 epoch의 loss가 최소 loss보다 작으면 모델 갱신
-    if mse_epoch_loss < best_loss:
-        best_loss = mse_epoch_loss
+    if mae_epoch_loss < best_loss:
+        best_loss = mae_epoch_loss
         torch.save(model.state_dict(), 'best_Restormer_400_final.pth')
         print(f"{epoch+1}epoch 모델 저장 완료")
 
